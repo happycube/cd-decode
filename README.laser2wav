@@ -1,0 +1,26 @@
+
+laser2wav
+---------
+
+Version 0.0.5 as released on March 14, 2005
+
+Copyright (c) 2005 by Sidney Cadot <sidney@jigsaw.nl>
+This software is licensed according to the GNU General Public Licence (GPL).
+
+What does it do?
+---------------
+
+The laser2wav package is a software-only implementation of an audio CD decoder.
+
+To decode raw audio data from laser data (sample data is provided), try
+
+    python laser2wav.py laserbits.txt audio.wav
+
+However, the real target here is not so much running the program; rather, this
+was written to have a reference implementation for CD audio decoding, including
+such things as subchannel decoding, error handling, and de-interleaving.
+
+Future Plans
+------------
+
+The package could definitely use some more documentation.

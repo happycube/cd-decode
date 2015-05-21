@@ -1,0 +1,17 @@
+
+This file documents the history of the laser2wav package.
+
+--- version 0.0.2:
+
+* Initial release
+
+--- version 0.0.5:
+
+* fixed silly "to_signed" bug
+* added HISTORY
+* renamed source and data files
+* added lots of comments
+* cleaned up "galois field" code
+* emit a PCM-encoded WAV file instead of a text file
+* laser input is now assumed to be the raw signal
+  (not the delta-signal as before).
