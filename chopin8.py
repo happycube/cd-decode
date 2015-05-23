@@ -55,6 +55,8 @@ bandpass = sps.firwin(49, [.290/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
 
 # 19/1007 with leftover
 bandpass = sps.firwin(45, [.360/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
+# 18/1008 with leftover
+bandpass = sps.firwin(47, [.350/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
 
 data = sps.lfilter(bandpass, 1.0, data)
 
