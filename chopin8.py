@@ -29,7 +29,7 @@ data = data.astype(np.float64)
 dc = data.mean()
 data -= dc
 
-# without filter: 340 errors, 303bad/449good if DP
+# without filter: 340 errors, 303bad/449good if DP (324/473 if using leftover at write time)
 
 # 91 errors
 bandpass = sps.firwin(97, [.08/NYQUIST_MHZ, 1.20/NYQUIST_MHZ], pass_zero=False)
@@ -41,11 +41,24 @@ bandpass = sps.firwin(97, [.075/NYQUIST_MHZ, 1.50/NYQUIST_MHZ], pass_zero=False)
 bandpass = sps.firwin(97, [.100/NYQUIST_MHZ, 1.50/NYQUIST_MHZ], pass_zero=False)
 # 44 (double precision)
 bandpass = sps.firwin(91, [.100/NYQUIST_MHZ, 1.50/NYQUIST_MHZ], pass_zero=False)
-# 40 (double precision)/ 842 good
+# 40 (double precision)/ 842 good - 29/920 if using leftover
 bandpass = sps.firwin(91, [.095/NYQUIST_MHZ, 1.72/NYQUIST_MHZ], pass_zero=False)
+
+# 30/957 with leftover
+bandpass = sps.firwin(65, [.150/NYQUIST_MHZ, 1.75/NYQUIST_MHZ], pass_zero=False)
+
+# 20/994 with leftover
+bandpass = sps.firwin(49, [.290/NYQUIST_MHZ, 1.80/NYQUIST_MHZ], pass_zero=False)
+
+# 17/999 with leftover
+bandpass = sps.firwin(49, [.290/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
+
+# 19/1007 with leftover
+bandpass = sps.firwin(45, [.360/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
+
 data = sps.lfilter(bandpass, 1.0, data)
 
-#bandpassb, bandpassa = sps.butter(4, [0.20/NYQUIST_MHZ, 1.7/NYQUIST_MHZ], btype='bandpass')
+#bandpassb, bandpassa = sps.butter(4, [0.10/NYQUIST_MHZ, 2.0/NYQUIST_MHZ], btype='bandpass')
 #data = sps.lfilter(bandpassb, bandpassa, data)
 
 # filter to binary signal
