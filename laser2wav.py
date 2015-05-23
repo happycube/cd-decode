@@ -219,9 +219,13 @@ def main():
         if z<0: break
         frame = delta_signal[z:z+588]
         if len(frame)==588:
-            (control, data) = analyze_frame(frame)
-            control_stream.append(control)
-            data_stream.append(data)
+            try:
+                    (control, data) = analyze_frame(frame)
+                    control_stream.append(control)
+                    data_stream.append(data)
+	            print("good")	
+            except KeyError:
+	            print("argh")	
         z = z + 588
 
     analyze_control_stream(control_stream)
