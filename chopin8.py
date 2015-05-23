@@ -29,7 +29,7 @@ data = data.astype(np.float64)
 dc = data.mean()
 data -= dc
 
-# without filter: 340 errors
+# without filter: 340 errors, 303bad/449good if DP
 
 # 91 errors
 bandpass = sps.firwin(97, [.08/NYQUIST_MHZ, 1.20/NYQUIST_MHZ], pass_zero=False)
@@ -41,9 +41,12 @@ bandpass = sps.firwin(97, [.075/NYQUIST_MHZ, 1.50/NYQUIST_MHZ], pass_zero=False)
 bandpass = sps.firwin(97, [.100/NYQUIST_MHZ, 1.50/NYQUIST_MHZ], pass_zero=False)
 # 44 (double precision)
 bandpass = sps.firwin(91, [.100/NYQUIST_MHZ, 1.50/NYQUIST_MHZ], pass_zero=False)
-# 40 (double precision)
-bandpass = sps.firwin(91, [.095/NYQUIST_MHZ, 1.70/NYQUIST_MHZ], pass_zero=False)
+# 40 (double precision)/ 842 good
+bandpass = sps.firwin(91, [.095/NYQUIST_MHZ, 1.72/NYQUIST_MHZ], pass_zero=False)
 data = sps.lfilter(bandpass, 1.0, data)
+
+#bandpassb, bandpassa = sps.butter(4, [0.20/NYQUIST_MHZ, 1.7/NYQUIST_MHZ], btype='bandpass')
+#data = sps.lfilter(bandpassb, bandpassa, data)
 
 # filter to binary signal
 data = (data > 0.0)
@@ -115,6 +118,9 @@ if True:
     print "writing file ..."
 
     with open("chopin8-bits.txt", "w") as f:
+        leftover = 0
         for (value, duration) in zip(runValues, runDurations):
-            duration = int(round(duration)) # to integer
-            f.write(str(value) * duration)
+            durationr = int(round(duration + (leftover * .111))) # to integer
+            leftover = duration - durationr
+
+            f.write(str(value) * durationr)
