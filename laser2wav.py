@@ -24,7 +24,11 @@ def analyze_frame(frame):
     for i in range(33):
         channel14 = frame[27+17*i:41+17*i]
         merge3    = frame[41+17*i:44+17*i] # ignore
-        data8 = EFM[channel14]
+        try:
+            data8 = EFM[channel14]
+        except KeyError:
+            data8 = EFM["01001000100000"]
+            print("argh")
         framedata.append(data8)
 
     return (framedata[0], framedata[1:])
@@ -78,7 +82,12 @@ def analyze_control_stream(control_stream):
             control_sector = control_stream[2:98]
             control_stream = control_stream[98:]
 
-            P = str.join("", map(lambda x: str(int((x & 0x80)!=0)), control_sector))
+            try:
+                    P = str.join("", map(lambda x: str(int((x & 0x80)!=0)), control_sector))
+            except TypeError:
+                    print(control_stream)
+                    exit(0)
+
             Q = str.join("", map(lambda x: str(int((x & 0x40)!=0)), control_sector))
             R = str.join("", map(lambda x: str(int((x & 0x20)!=0)), control_sector))
             S = str.join("", map(lambda x: str(int((x & 0x10)!=0)), control_sector))

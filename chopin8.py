@@ -7,6 +7,32 @@ from scipy.stats import itemfreq
 import numpy as np
 import scipy.signal as sps
 
+freq = (315.0 / 88.0) * 8.0
+
+def doplot(B, A):
+	w, h = sps.freqz(B, A)
+
+	fig = plt.figure()
+	plt.title('Digital filter frequency response')
+	
+	db = 20 * np.log10(abs(h))
+
+	ax1 = fig.add_subplot(111)
+	
+	plt.plot(w * (freq/np.pi) / 2.0, 20 * np.log10(abs(h)), 'b')
+	plt.ylabel('Amplitude [dB]', color='b')
+	plt.xlabel('Frequency [rad/sample]')
+
+	ax2 = ax1.twinx()
+	angles = np.unwrap(np.angle(h))
+	plt.plot(w * (freq/np.pi) / 2.0, angles, 'g')
+	plt.ylabel('Angle (radians)', color='g')
+	
+	plt.grid()
+	plt.axis('tight')
+	plt.show()
+
+
 CD_BASE_FREQUENCY = 4321800.0 # Hz
 SAMPLE_FREQUENCY = 28.636e6 # Hz
 
@@ -55,13 +81,31 @@ bandpass = sps.firwin(49, [.290/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
 
 # 19/1007 with leftover
 bandpass = sps.firwin(45, [.360/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
-# 18/1008 with leftover
-bandpass = sps.firwin(47, [.350/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
+# 18/1008 with leftover, 36/1055 with new leftover
+#bandpass = sps.firwin(47, [.350/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
+
+# 8/1054 with 0.2 leftover
+bandpass = sps.firwin(55, [.350/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
+
+# trying to follow cd player as reference - 79/825
+#bandpass = sps.firwin(33, [.047/NYQUIST_MHZ, 1.59/NYQUIST_MHZ], pass_zero=False)
 
 data = sps.lfilter(bandpass, 1.0, data)
 
-#bandpassb, bandpassa = sps.butter(4, [0.10/NYQUIST_MHZ, 2.0/NYQUIST_MHZ], btype='bandpass')
+#[b, a] = sps.zpk2tf([1/1590000.0], [0, 1/49700.0], 1.0)
+#[bb, aa] = sps.bilinear(b, a, 1.0)
+#doplot(bb, aa)
+#exit()
+
+bandpassb, bandpassa = sps.butter(8, [0.047/NYQUIST_MHZ, 1.59/NYQUIST_MHZ], btype='bandpass')
+#doplot(bandpassb, bandpassa)
+#exit()
+#plt.plot(data[5000:6000])
 #data = sps.lfilter(bandpassb, bandpassa, data)
+
+#plt.plot(data[5000:6000])
+#plt.show()
+#exit()
 
 # filter to binary signal
 data = (data > 0.0)
@@ -135,7 +179,9 @@ if True:
     with open("chopin8-bits.txt", "w") as f:
         leftover = 0
         for (value, duration) in zip(runValues, runDurations):
-            durationr = int(round(duration + (leftover * .111))) # to integer
+            #durationr = int(round(duration + (leftover * .111))) # to integer
+            durationr = int(round(duration + (leftover * 0.2))) # to integer
+#           durationr = int(round(duration)) # to integer
             leftover = duration - durationr
 
             f.write(str(value) * durationr)
