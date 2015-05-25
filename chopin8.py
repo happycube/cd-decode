@@ -87,21 +87,48 @@ bandpass = sps.firwin(45, [.360/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
 # 8/1054 with 0.2 leftover
 bandpass = sps.firwin(55, [.350/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
 
+# 5/1055 with 0.25 leftover scale
+bandpass = sps.firwin(55, [.335/NYQUIST_MHZ, 1.875/NYQUIST_MHZ], pass_zero=False)
+bandpass = sps.firwin(55, [.335/NYQUIST_MHZ, 1.870/NYQUIST_MHZ], pass_zero=False)
+
 # trying to follow cd player as reference - 79/825
 #bandpass = sps.firwin(33, [.047/NYQUIST_MHZ, 1.59/NYQUIST_MHZ], pass_zero=False)
 
 data = sps.lfilter(bandpass, 1.0, data)
-
+offset = len(bandpass) / 2
 #[b, a] = sps.zpk2tf([1/1590000.0], [0, 1/49700.0], 1.0)
 #[bb, aa] = sps.bilinear(b, a, 1.0)
 #doplot(bb, aa)
 #exit()
 
-bandpassb, bandpassa = sps.butter(8, [0.047/NYQUIST_MHZ, 1.59/NYQUIST_MHZ], btype='bandpass')
+bandpassb, bandpassa = sps.butter(3, [0.047/NYQUIST_MHZ, 1.59/NYQUIST_MHZ], btype='bandpass')
+# 314/956
+bandpassb, bandpassa = sps.butter(4, 1.59/NYQUIST_MHZ, btype='lowpass')
+# 339/959
+bandpassb, bandpassa = sps.butter(6, 1.57/NYQUIST_MHZ, btype='lowpass')
 #doplot(bandpassb, bandpassa)
 #exit()
 #plt.plot(data[5000:6000])
 #data = sps.lfilter(bandpassb, bandpassa, data)
+
+#plt.plot(data[5000:6000])
+#plt.show()
+#exit()
+
+#t1 = 1; t2 = 32; [b, a] = bilinear(-t1*(10^-8), -t2*(10^-8), t2/t1, freq); freqz(b, a)
+# printf("f_emp_b = ["); printf("%.15e, ", b); printf("]\nf_emp_a = ["); printf("%.15e, ", a); printf("]\n")
+f_emp_b = [1.041988950276243e+01, -9.027624309392266e+00, ]
+f_emp_a = [1.000000000000000e+00, 3.922651933701657e-01, ]
+#data = sps.lfilter(f_emp_b, f_emp_a, data)
+
+#lowpass = sps.firwin(55, 1.870/NYQUIST_MHZ)
+#data = sps.lfilter(lowpass, 1.0, data)
+
+highpassb, highpassa = sps.butter(1, .010/NYQUIST_MHZ, 'highpass')
+#lowpassb, lowpassa = sps.butter(1, 1.59/NYQUIST_MHZ, 'lowpass')
+#lowpassb, lowpassa = sps.butter(3, 1.40/NYQUIST_MHZ)
+#data = sps.lfilter(highpassb, highpassa, data)
+#data = sps.lfilter(lowpassb, lowpassa, data)
 
 #plt.plot(data[5000:6000])
 #plt.show()
@@ -180,7 +207,9 @@ if True:
         leftover = 0
         for (value, duration) in zip(runValues, runDurations):
             #durationr = int(round(duration + (leftover * .111))) # to integer
-            durationr = int(round(duration + (leftover * 0.2))) # to integer
+            #durationr = int(round(duration + (leftover * 0.22))) # to integer
+            #durationr = int(round(duration + (leftover * 0.24))) # to integer
+            durationr = int(round(duration + (leftover * 0.270))) # to integer
 #           durationr = int(round(duration)) # to integer
             leftover = duration - durationr
 
