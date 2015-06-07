@@ -1,60 +1,73 @@
+#! /usr/bin/env python3
+
 # laser2wav.py
 #
-# Copyright (c) 2005 by Sidney Cadot <sidney@jigsaw.nl>
+# Copyright (c) 2005--2015 by Sidney Cadot <sidney@jigsaw.nl>
 # This software is licensed under the GNU General Public License (GPL).
 #
-# This file is part of laser2wav, a software-only implementation of
+# This file is part of Laser2Wav, a software-only implementation of
 # an audio CD decoder.
-#
-###############################################################################
 
-import sys
-import wav_format
+
+import sys, wave
 import galois_field as gf
-
 from efm import EFM
 
+goodsym = 0
+
 def analyze_frame(frame):
-    assert len(frame)==588 # verify that each frame is 588 bits long
+    assert len(frame) == 588 # verify that each frame is 588 bits long
     sync24 = frame[0:24]
     merge3 = frame[24:27] # ignore
     assert sync24 == "100000000001000000000010"
+    
+    global goodsym
 
     framedata = []
     for i in range(33):
         channel14 = frame[27+17*i:41+17*i]
         merge3    = frame[41+17*i:44+17*i] # ignore
+        data8 = 0
         try:
-            data8 = EFM[channel14]
+                data8 = EFM[channel14]
+                goodsym = goodsym + 1 
         except KeyError:
-            data8 = EFM["01001000100000"]
-            print("argh")
+                print("argh-data")
+                data8 = 0
         framedata.append(data8)
 
     return (framedata[0], framedata[1:])
 
 def invert_last_16(Q):
-    return Q[:-16] + str.join("", map(lambda x: str(1-int(x)), Q[-16:]))
+    return Q[:-16] + str.join("", [str(1 - int(x)) for x in Q[-16:]])
 
 def valid_crc(Q):
     # this is a simple way to check the CRC
-    if len(Q)==0: return True
-    if Q[0]=='0': return valid_crc(Q[1:])
-    if len(Q)<17: return False
-    # subtract multiple of the generator polynomial
-    Q = map(int, Q)
-    Q[ 0] = 1-Q[ 0]
-    Q[ 4] = 1-Q[ 4]
-    Q[11] = 1-Q[11]
-    Q[16] = 1-Q[16]
-    Q = str.join("", map(str, Q))
+    if len(Q) == 0:
+        return True
+    if Q[0] == '0':
+        return valid_crc(Q[1:])
+    if len(Q)<17:
+        return False
+
+    # subtract multiple of the CRC generator polynomial
+    Q = [int(x) for x in Q]
+    Q[ 0] = 1 - Q[ 0]
+    Q[ 4] = 1 - Q[ 4]
+    Q[11] = 1 - Q[11]
+    Q[16] = 1 - Q[16]
+    Q = str.join("", [str(x) for x in Q])
     return valid_crc(Q)
 
 def to_signed(n):
-    if n<=32767:
-        return n
-    else:
-        return n-65536
+    if n >= 32768:
+        n -= 65536
+    return n
+
+def to_unsigned(n):
+    if n < 0:
+        n += 65536
+    return n
 
 def bcd2int(S):
     assert len(S)==8
@@ -66,35 +79,31 @@ def bcd2int(S):
 
 def analyze_control_stream(control_stream):
 
-    print "Analyzing control stream ..."
+    print("Analyzing control stream ...")
 
     all_zeros = 96 * "0"
     all_ones  = 96 * "1"
     ok_map = {False: "ERROR", True: "ok"}
 
-    while len(control_stream)>=98:
-        if control_stream[0]!='SYNC0':
+    while len(control_stream) >= 98:
+        if control_stream[0] != 'SYNC0':
             # discard a control byte - not part of a sector
             control_stream = control_stream[1:]
         else:
-            assert control_stream[0]=='SYNC0'
-            assert control_stream[1]=='SYNC1'
+            assert control_stream[0] == 'SYNC0'
+            assert control_stream[1] == 'SYNC1'
+
             control_sector = control_stream[2:98]
             control_stream = control_stream[98:]
 
-            try:
-                    P = str.join("", map(lambda x: str(int((x & 0x80)!=0)), control_sector))
-            except TypeError:
-                    print(control_stream)
-                    exit(0)
-
-            Q = str.join("", map(lambda x: str(int((x & 0x40)!=0)), control_sector))
-            R = str.join("", map(lambda x: str(int((x & 0x20)!=0)), control_sector))
-            S = str.join("", map(lambda x: str(int((x & 0x10)!=0)), control_sector))
-            T = str.join("", map(lambda x: str(int((x & 0x08)!=0)), control_sector))
-            U = str.join("", map(lambda x: str(int((x & 0x04)!=0)), control_sector))
-            V = str.join("", map(lambda x: str(int((x & 0x02)!=0)), control_sector))
-            W = str.join("", map(lambda x: str(int((x & 0x01)!=0)), control_sector))
+            P = str.join("", [str(int((x & 0x80) != 0)) for x in control_sector])
+            Q = str.join("", [str(int((x & 0x40) != 0)) for x in control_sector])
+            R = str.join("", [str(int((x & 0x20) != 0)) for x in control_sector])
+            S = str.join("", [str(int((x & 0x10) != 0)) for x in control_sector])
+            T = str.join("", [str(int((x & 0x08) != 0)) for x in control_sector])
+            U = str.join("", [str(int((x & 0x04) != 0)) for x in control_sector])
+            V = str.join("", [str(int((x & 0x02) != 0)) for x in control_sector])
+            W = str.join("", [str(int((x & 0x01) != 0)) for x in control_sector])
 
             p_ok = (P in [all_zeros, all_ones])
             q_ok = valid_crc(invert_last_16(Q))
@@ -105,44 +114,44 @@ def analyze_control_stream(control_stream):
             v_ok = (V == all_zeros) # for most CDs
             w_ok = (W == all_zeros) # for most CDs
 
-            print "    Sector sub-channels:"
-            print "        P: <%s> %s" % (P, ok_map[p_ok])
-            print "        Q: <%s> %s" % (Q, ok_map[q_ok])
-            
+            print("    Sector sub-channels:")
+            print("        P: <{}> {}".format(P, ok_map[p_ok]))
+            print("        Q: <{}> {}".format(Q, ok_map[q_ok]))
+
             if q_ok:
                 q_control = Q[0:4]
-                q_mode    = int(Q[4:8],2)
+                q_mode    = int(Q[4:8], 2)
                 q_data    = Q[8:80]
                 if q_mode == 1:
                     (tno,index,min,sec,frac,zero,amin,asec,afrac) = [bcd2int(q_data[8*i:8*i+8]) for i in range(9)]
                     assert zero == 0
-                    print "              CONTROL .......... : <%s> [#channels / reserved / copy-protect / pre-emphasis]" % q_control
-                    print "              MODE ............. : %d"       % q_mode
-                    print "              DATA ............. : trackno. %02d indexno. %02d track-time %02d:%02d.%02d [mm:ss.ff] disc-time %02d:%02d.%02d [mm:ss.ff]" % (tno, index, min,  sec,  frac, amin, asec, afrac)
+                    print("              CONTROL .......... : <{}> [#channels / reserved / copy-protect / pre-emphasis]".format(q_control))
+                    print("              MODE ............. : {}".format(q_mode))
+                    print("              DATA ............. : trackno. {:02d} indexno. {:02d} track-time {:02d}:{:02d}.{:02d} [mm:ss.ff] disc-time {:02d}:{:02d}.{:02d} [mm:ss.ff]".format(tno, index, min,  sec,  frac, amin, asec, afrac))
                 else:
-                    print "              CONTROL .......... : <%s>"  % q_control
-                    print "              MODE ............. : %d"    % q_mode
-                    print "              DATA ............. : <%s>"  % q_data
+                    print("              CONTROL .......... : <{}>".format(q_control))
+                    print("              MODE ............. : {}".format(q_mode))
+                    print("              DATA ............. : <{}>".format(q_data))
 
-            print "        R: <%s> %s" % (R, ok_map[r_ok])
-            print "        S: <%s> %s" % (S, ok_map[s_ok])
-            print "        T: <%s> %s" % (T, ok_map[t_ok])
-            print "        U: <%s> %s" % (U, ok_map[u_ok])
-            print "        V: <%s> %s" % (V, ok_map[v_ok])
-            print "        W: <%s> %s" % (W, ok_map[w_ok])
+            print("        R: <{}> {}".format(R, ok_map[r_ok]))
+            print("        S: <{}> {}".format(S, ok_map[s_ok]))
+            print("        T: <{}> {}".format(T, ok_map[t_ok]))
+            print("        U: <{}> {}".format(U, ok_map[u_ok]))
+            print("        V: <{}> {}".format(V, ok_map[v_ok]))
+            print("        W: <{}> {}".format(W, ok_map[w_ok]))
 
 def verify_data_stream(data):
 
     errorsP = 0
     errorsQ = 0
-    
+
     # make the Reed-Solomon check calculations
 
-    invert = [0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,255]
+    invert = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255]
 
     # check C1 a.k.a. P-parity
-    print "Checking C1 / P parity ..."
-    p_delay = [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1]
+    print("Checking C1 / P parity ...")
+    p_delay = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
     for i in range(1, len(data)):
         z_list = []
         for hp_row in range(4):
@@ -151,30 +160,32 @@ def verify_data_stream(data):
                 z = gf.add(z, gf.multiply(gf.power(gf.alpha, hp_row*(31-j)), data[i-p_delay[j]][j]^invert[j]))
             z_list.append(z)    
         if z_list != [gf.zero, gf.zero, gf.zero, gf.zero]:
-            print "P PARITY: ERROR DETECTED AT FRAME #%d" % i
+            print("P PARITY: ERROR DETECTED IN FRAME # {}".format(i))
             errorsP = errorsP + 1
+        else:
+            print("P PARITY: FRAME # {} GOOD".format(i))
+
 
     # check C2 a.k.a. Q-parity
-    print "Checking C2 / Q parity ..."
-    q_delay = [107,104,99,96,91,88,83,80,75,72,67,64,59,56,51,48,43,40,35,32,27,24,19,16,11,8,3,0]
+    print("Checking C2 / Q parity ...")
+    q_delay = [107, 104, 99, 96, 91, 88, 83, 80, 75, 72, 67, 64, 59, 56, 51, 48, 43, 40, 35, 32, 27, 24, 19, 16, 11, 8, 3, 0]
     for i in range(107, len(data)):
         z_list = []
         for hq_row in range(4):
-            z = gf.zero    
+            z = gf.zero
             for j in range(28):
                 z  = gf.add(z, gf.multiply(gf.power(gf.alpha, hq_row*(27-j)), data[i-q_delay[j]][j]^invert[j]))
-            z_list.append(z)    
+            z_list.append(z)
         if z_list!= [gf.zero, gf.zero, gf.zero, gf.zero]:
-            print "Q PARITY: ERROR DETECTED AT FRAME #%d" % i
+            print("Q PARITY: ERROR DETECTED IN FRAME # {}".format(i))
             errorsQ = errorsQ + 1
+        else:
+            print("Q PARITY: FRAME # {} GOOD".format(i))
 
     return (errorsP, errorsQ)
 
 def extract_audio_stream(data):
 
-    # extract the audio data
-
-    print "Extracting audio data ..."
     audio_data = []
 
     for i in range(105, len(data)):
@@ -199,54 +210,81 @@ def extract_audio_stream(data):
 
     return audio_data
 
+def write_wav_file(filename_out, audio_data):
+
+    # Python's WAV-file writer expects raw data, encoded as a string.
+
+    wave_data = bytearray()
+    for (left, right) in audio_data:
+        left = to_unsigned(left)
+        right = to_unsigned(right)
+        wave_data.append(left % 256)
+        wave_data.append(left // 256)
+        wave_data.append(right % 256)
+        wave_data.append(right // 256)
+
+    # Write the WAV file.
+
+    wf = wave.open(filename_out, "w")
+    wf.setnchannels(2) # stereo
+    wf.setsampwidth(2) # 16-bit signal; 2 bytes per sample
+    wf.setframerate(44100)
+    wf.writeframes(wave_data)
+    wf.close()
+
 def main():
 
-    if len(sys.argv)!=3:
-        print "Usage: python laser2wav.py <laser-in.dat> <waveform-out.wav>"
+    if len(sys.argv) != 3:
+        print("Usage: python laser2wav.py <laser-in.dat> <waveform-out.wav>")
         return
 
     filename_in  = sys.argv[1]
     filename_out = sys.argv[2]
 
-    print "Reading raw signal ..."
-    f = open(filename_in, "rb")
-    raw_signal = f.read()
-    f.close()
-    
-    print "Converting to delta signal..."
-    raw_signal = map(int, raw_signal)
-    delta_signal = [str(raw_signal[i] ^ raw_signal[i-1]) for i in range(1, len(raw_signal))]
+    print("Reading raw signal ...")
+    with open(filename_in, "rb") as f:
+        raw_signal = f.read()
+
+    print("Converting to delta signal...")
+    raw_signal = [int (x) for x in raw_signal]
+    delta_signal = [str(raw_signal[i] ^ raw_signal[i - 1]) for i in range(1, len(raw_signal))]
     delta_signal = str.join("", delta_signal)
 
-    print "Walking frames..."
+    print("Walking frames...")
     control_stream = []
     data_stream    = []
 
     z = 0
     while True:
         z = delta_signal.find("100000000001000000000010", z)
-        if z<0: break
+        if z < 0:
+            break
+
         frame = delta_signal[z:z+588]
+        if len(frame) == 588:
+            (control, data) = analyze_frame(frame)
+            control_stream.append(control)
+            data_stream.append(data)
         z = z + 588
-        if len(frame)==588:
-            try:
-                    (control, data) = analyze_frame(frame)
-                    control_stream.append(control)
-                    data_stream.append(data)
-	            print("good")	
-            except KeyError:
-	            print("argh")	
 
-    analyze_control_stream(control_stream)
+    global goodsym
+    print(goodsym, " good symbols")
 
-    verify_data_stream(data_stream)
+    try:
+        analyze_control_stream(control_stream)
+    except TypeError:
+        print("argh-an")
 
+    try:
+        verify_data_stream(data_stream)
+    except TypeError:
+        print("argh-vf")
+
+    print("Extracting audio data ...")
     audio_data = extract_audio_stream(data_stream)
 
-    print "Writing WAV file ..."
-    f = open(filename_out, "wb")
-    f.write(wav_format.wave_file_string(audio_data))
-    f.close()
+    print("Writing WAV file ...")
+    write_wav_file(filename_out, audio_data)
 
 if __name__ == "__main__":
     main()

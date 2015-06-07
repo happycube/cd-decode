@@ -37,13 +37,70 @@ CD_BASE_FREQUENCY = 4321800.0 # Hz
 SAMPLE_FREQUENCY = 28.636e6 # Hz
 
 FREQ_MHZ = (315.0 / 88.0) * 8.0
-FREQ_HZ = FREQ_MHZ * 1000000.0
 NYQUIST_MHZ = FREQ_MHZ / 2
+FREQ_HZ = FREQ_MHZ * 1000000.0
+NYQUIST_HZ = FREQ_HZ / 2
 
 data = np.fromfile("chopin8.cdraw", dtype = np.uint8)
 
 # remove the first samples because they are strange (lower amplitude)
-data = data[2650:]
+data = data[2650:len(data)-5000]
+
+#for i in range(0, len(data)):
+#	print i / FREQ_HZ,",", (data[i] / 256.0) - .5
+#
+#exit()
+
+# without filter:  299/964
+# poles at 0 and 49700 hz, 3.202312738us, zero at 1.59mhz/0.100097448us 
+
+# this shhould be - but doesn't work worth a darn
+deemp_pole = .100097448 * 1 
+deemp_zero = 3.202312738 * 1 
+
+# 33/1016
+deemp_pole = .1304 * 1 
+deemp_zero = 2.200 * 1 
+lowpass_b, lowpass_a = sps.butter(1, 2.200/NYQUIST_MHZ)
+
+# 35/1029
+deemp_pole = .1300 * 1 
+deemp_zero = 2.800 * 1 
+lowpass_b, lowpass_a = sps.butter(3, 2.200/NYQUIST_MHZ)
+
+# 30/1032
+deemp_pole = .1300 * 1 
+deemp_zero = 2.800 * 1 
+lowpass_b, lowpass_a = sps.butter(3, 2.400/NYQUIST_MHZ)
+
+# 27/1033
+deemp_pole = .1300 * 1 
+deemp_zero = 2.800 * 1 
+lowpass_b, lowpass_a = sps.butter(3, 2.420/NYQUIST_MHZ)
+
+# 27/1033 - 24/1033 with .295 adjustment below
+deemp_pole = .1300 * 1 
+deemp_zero = 2.800 * 1 
+lowpass_b, lowpass_a = sps.butter(3, 2.420/NYQUIST_MHZ)
+
+# 21/1018
+deemp_pole = .1100 * 1 
+deemp_zero = 3.100 * 1 
+lowpass_b, lowpass_a = sps.butter(2, 2.120/NYQUIST_MHZ)
+
+# 40/1021 
+#deemp_pole = .1450 * 1 
+#deemp_zero = 0.790 * 1 
+
+[tf_b, tf_a] = sps.zpk2tf([-deemp_pole*(10**-8)], [-deemp_zero*(10**-8)], deemp_pole / deemp_zero)
+[f_emp_b, f_emp_a] = sps.bilinear(tf_b, tf_a, .5/FREQ_HZ)
+
+# 6/1054 with 0.27 leftover scale
+bandpass = sps.firwin(55, [.335/NYQUIST_MHZ, 1.870/NYQUIST_MHZ], pass_zero=False)
+
+#doplot(f_emp_b, f_emp_a)
+#doplot(bandpass, [1.0])
+#exit()
 
 # convert to single-precision floats
 #data = data.astype(np.float32)
@@ -55,80 +112,12 @@ data = data.astype(np.float64)
 dc = data.mean()
 data -= dc
 
-# without filter: 340 errors, 303bad/449good if DP (324/473 if using leftover at write time)
-
-# 91 errors
-bandpass = sps.firwin(97, [.08/NYQUIST_MHZ, 1.20/NYQUIST_MHZ], pass_zero=False)
-# 88 errors
-bandpass = sps.firwin(97, [.075/NYQUIST_MHZ, 1.20/NYQUIST_MHZ], pass_zero=False)
-# 66 errors, 53 if double precision 
-bandpass = sps.firwin(97, [.075/NYQUIST_MHZ, 1.50/NYQUIST_MHZ], pass_zero=False)
-# 47 (double precision)
-bandpass = sps.firwin(97, [.100/NYQUIST_MHZ, 1.50/NYQUIST_MHZ], pass_zero=False)
-# 44 (double precision)
-bandpass = sps.firwin(91, [.100/NYQUIST_MHZ, 1.50/NYQUIST_MHZ], pass_zero=False)
-# 40 (double precision)/ 842 good - 29/920 if using leftover
-bandpass = sps.firwin(91, [.095/NYQUIST_MHZ, 1.72/NYQUIST_MHZ], pass_zero=False)
-
-# 30/957 with leftover
-bandpass = sps.firwin(65, [.150/NYQUIST_MHZ, 1.75/NYQUIST_MHZ], pass_zero=False)
-
-# 20/994 with leftover
-bandpass = sps.firwin(49, [.290/NYQUIST_MHZ, 1.80/NYQUIST_MHZ], pass_zero=False)
-
-# 17/999 with leftover
-bandpass = sps.firwin(49, [.290/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
-
-# 19/1007 with leftover
-bandpass = sps.firwin(45, [.360/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
-# 18/1008 with leftover, 36/1055 with new leftover
-#bandpass = sps.firwin(47, [.350/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
-
-# 8/1054 with 0.2 leftover
-bandpass = sps.firwin(55, [.350/NYQUIST_MHZ, 1.85/NYQUIST_MHZ], pass_zero=False)
-
-# 5/1055 with 0.25 leftover scale
-bandpass = sps.firwin(55, [.335/NYQUIST_MHZ, 1.875/NYQUIST_MHZ], pass_zero=False)
-bandpass = sps.firwin(55, [.335/NYQUIST_MHZ, 1.870/NYQUIST_MHZ], pass_zero=False)
-
-# trying to follow cd player as reference - 79/825
-#bandpass = sps.firwin(33, [.047/NYQUIST_MHZ, 1.59/NYQUIST_MHZ], pass_zero=False)
-
-data = sps.lfilter(bandpass, 1.0, data)
-offset = len(bandpass) / 2
-#[b, a] = sps.zpk2tf([1/1590000.0], [0, 1/49700.0], 1.0)
-#[bb, aa] = sps.bilinear(b, a, 1.0)
-#doplot(bb, aa)
-#exit()
-
-bandpassb, bandpassa = sps.butter(3, [0.047/NYQUIST_MHZ, 1.59/NYQUIST_MHZ], btype='bandpass')
-# 314/956
-bandpassb, bandpassa = sps.butter(4, 1.59/NYQUIST_MHZ, btype='lowpass')
-# 339/959
-bandpassb, bandpassa = sps.butter(6, 1.57/NYQUIST_MHZ, btype='lowpass')
-#doplot(bandpassb, bandpassa)
-#exit()
 #plt.plot(data[5000:6000])
-#data = sps.lfilter(bandpassb, bandpassa, data)
 
-#plt.plot(data[5000:6000])
-#plt.show()
-#exit()
+data = sps.lfilter(f_emp_b, f_emp_a, data)
+data = sps.lfilter(lowpass_b, lowpass_a, data)
 
-#t1 = 1; t2 = 32; [b, a] = bilinear(-t1*(10^-8), -t2*(10^-8), t2/t1, freq); freqz(b, a)
-# printf("f_emp_b = ["); printf("%.15e, ", b); printf("]\nf_emp_a = ["); printf("%.15e, ", a); printf("]\n")
-f_emp_b = [1.041988950276243e+01, -9.027624309392266e+00, ]
-f_emp_a = [1.000000000000000e+00, 3.922651933701657e-01, ]
-#data = sps.lfilter(f_emp_b, f_emp_a, data)
-
-#lowpass = sps.firwin(55, 1.870/NYQUIST_MHZ)
-#data = sps.lfilter(lowpass, 1.0, data)
-
-highpassb, highpassa = sps.butter(1, .010/NYQUIST_MHZ, 'highpass')
-#lowpassb, lowpassa = sps.butter(1, 1.59/NYQUIST_MHZ, 'lowpass')
-#lowpassb, lowpassa = sps.butter(3, 1.40/NYQUIST_MHZ)
-#data = sps.lfilter(highpassb, highpassa, data)
-#data = sps.lfilter(lowpassb, lowpassa, data)
+#data = sps.lfilter(bandpass, [1.0], data)
 
 #plt.plot(data[5000:6000])
 #plt.show()
@@ -209,7 +198,8 @@ if True:
             #durationr = int(round(duration + (leftover * .111))) # to integer
             #durationr = int(round(duration + (leftover * 0.22))) # to integer
             #durationr = int(round(duration + (leftover * 0.24))) # to integer
-            durationr = int(round(duration + (leftover * 0.270))) # to integer
+#            durationr = int(round(duration + (leftover * 0.270))) # to integer
+            durationr = int(round(duration + (leftover * 0.295))) # to integer
 #           durationr = int(round(duration)) # to integer
             leftover = duration - durationr
 

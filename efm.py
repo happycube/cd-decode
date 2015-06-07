@@ -1,13 +1,12 @@
 # efm.py
 #
-# Copyright (c) 2005 by Sidney Cadot <sidney@jigsaw.nl>
+# Copyright (c) 2005--2015 by Sidney Cadot <sidney@jigsaw.nl>
 # This software is licensed under the GNU General Public License (GPL).
 #
 # This file is part of laser2wav, a software-only implementation of
 # an audio CD decoder.
-#
-###############################################################################
-#
+
+
 # The lookup dictionary that defines the Eight-To-Fourteen (EFM)
 # decoding algorithm as used in the CD audio channel encoding.
 #
@@ -32,7 +31,7 @@
 # 1000111000011110000011111000000111111000000011111110000000011111111
 #
 # The first step of decoding detects whether the sampled signal has changed
-# its level since the last (1/4321800)-second interval.
+# its level since the previous (1/4321800)-second interval.
 #
 # For the sample above, this results in:
 #
@@ -45,8 +44,8 @@
 # ("100000000001000000000010") and Fourteen-To-Eight demodulation work on
 # the "delta level" signal.
 #
-# The "3 to 11" length constraint for pit- and land-lengths translates to 2
-# "2 to 10" constraint for the "number of zeroes" between two successive lengths.
+# The "3 to 11" length constraint for pit- and land-lengths translates to a
+# "2 to 10" constraint for the "number of zeroes between two successive lengths.
 #
 # Of the 16,384 14-bit patterns that exist, only 267 do not violate the constraint.
 # 256 are used to encode byte patterns; two are used to encode unique
@@ -69,8 +68,8 @@
 # demodulation.
 
 EFM = {
-  "00100000000001" : "SYNC0", # special CONTROL pattern (first frame of sector)
-  "00000000010010" : "SYNC1", # special CONTROL pattern (second frame of sector)
+  "00100000000001" : 'SYNC0', # special CONTROL pattern (first frame of sector)
+  "00000000010010" : 'SYNC1', # special CONTROL pattern (second frame of sector)
   "01001000100000" : 0,
   "10000100000000" : 1,
   "10010000100000" : 2,
