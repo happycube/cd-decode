@@ -114,10 +114,10 @@ data -= dc
 
 #plt.plot(data[5000:6000])
 
-data = sps.lfilter(f_emp_b, f_emp_a, data)
-data = sps.lfilter(lowpass_b, lowpass_a, data)
+#data = sps.lfilter(f_emp_b, f_emp_a, data)
+#data = sps.lfilter(lowpass_b, lowpass_a, data)
 
-#data = sps.lfilter(bandpass, [1.0], data)
+data = sps.lfilter(bandpass, [1.0], data)
 
 #plt.plot(data[5000:6000])
 #plt.show()

@@ -93,6 +93,10 @@ def analyze_control_stream(control_stream):
             assert control_stream[0] == 'SYNC0'
             assert control_stream[1] == 'SYNC1'
 
+            for i in range(2, len(control_stream)):
+                if (control_stream[i] == 'SYNC0') or (control_stream[i] == 'SYNC1'):
+                    control_stream[i] = 0
+
             control_sector = control_stream[2:98]
             control_stream = control_stream[98:]
 
@@ -157,6 +161,8 @@ def verify_data_stream(data):
         for hp_row in range(4):
             z = gf.zero
             for j in range(32):
+                if (data[i-p_delay[j]][j] == 'SYNC1') or (data[i-p_delay[j]][j] == 'SYNC0'):
+                     data[i-p_delay[j]][j] = 0
                 z = gf.add(z, gf.multiply(gf.power(gf.alpha, hp_row*(31-j)), data[i-p_delay[j]][j]^invert[j]))
             z_list.append(z)    
         if z_list != [gf.zero, gf.zero, gf.zero, gf.zero]:
@@ -174,6 +180,8 @@ def verify_data_stream(data):
         for hq_row in range(4):
             z = gf.zero
             for j in range(28):
+                if (data[i-q_delay[j]][j] == 'SYNC1') or (data[i-q_delay[j]][j] == 'SYNC0'):
+                     data[i-q_delay[j]][j] = 0
                 z  = gf.add(z, gf.multiply(gf.power(gf.alpha, hq_row*(27-j)), data[i-q_delay[j]][j]^invert[j]))
             z_list.append(z)
         if z_list!= [gf.zero, gf.zero, gf.zero, gf.zero]:
@@ -187,6 +195,11 @@ def verify_data_stream(data):
 def extract_audio_stream(data):
 
     audio_data = []
+    
+    for i in range(105, len(data)):
+        for j in range(0, 28):
+            if (data[i - 105][j] == 'SYNC1') or (data[i - 105][j] == 'SYNC2'):
+                data[i - 105][j] = 0
 
     for i in range(105, len(data)):
 
@@ -254,6 +267,8 @@ def main():
     control_stream = []
     data_stream    = []
 
+    fcount = 0
+
     z = 0
     while True:
         z = delta_signal.find("100000000001000000000010", z)
@@ -265,20 +280,16 @@ def main():
             (control, data) = analyze_frame(frame)
             control_stream.append(control)
             data_stream.append(data)
+            fcount = fcount + 1
         z = z + 588
 
     global goodsym
     print(goodsym, " good symbols")
+    print(fcount, " frames found")
 
-    try:
-        analyze_control_stream(control_stream)
-    except TypeError:
-        print("argh-an")
+    analyze_control_stream(control_stream)
 
-    try:
-        verify_data_stream(data_stream)
-    except TypeError:
-        print("argh-vf")
+    verify_data_stream(data_stream)
 
     print("Extracting audio data ...")
     audio_data = extract_audio_stream(data_stream)
