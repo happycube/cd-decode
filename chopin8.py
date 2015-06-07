@@ -58,45 +58,50 @@ data = data[2650:len(data)-5000]
 deemp_pole = .100097448 * 1 
 deemp_zero = 3.202312738 * 1 
 
-# 33/1016
-deemp_pole = .1304 * 1 
-deemp_zero = 2.200 * 1 
-lowpass_b, lowpass_a = sps.butter(1, 2.200/NYQUIST_MHZ)
-
-# 35/1029
-deemp_pole = .1300 * 1 
-deemp_zero = 2.800 * 1 
-lowpass_b, lowpass_a = sps.butter(3, 2.200/NYQUIST_MHZ)
-
-# 30/1032
-deemp_pole = .1300 * 1 
-deemp_zero = 2.800 * 1 
-lowpass_b, lowpass_a = sps.butter(3, 2.400/NYQUIST_MHZ)
-
-# 27/1033
-deemp_pole = .1300 * 1 
-deemp_zero = 2.800 * 1 
-lowpass_b, lowpass_a = sps.butter(3, 2.420/NYQUIST_MHZ)
-
-# 27/1033 - 24/1033 with .295 adjustment below
-deemp_pole = .1300 * 1 
-deemp_zero = 2.800 * 1 
-lowpass_b, lowpass_a = sps.butter(3, 2.420/NYQUIST_MHZ)
-
 # 21/1018
+# NEW MEASURE:  850/1079
 deemp_pole = .1100 * 1 
 deemp_zero = 3.100 * 1 
 lowpass_b, lowpass_a = sps.butter(2, 2.120/NYQUIST_MHZ)
 
-# 40/1021 
-#deemp_pole = .1450 * 1 
-#deemp_zero = 0.790 * 1 
+# 999/1050 
+deemp_pole = .1450 * 1 
+deemp_zero = 3.100 * 1 
+lowpass_b, lowpass_a = sps.butter(2, 2.120/NYQUIST_MHZ)
+
+# 1177/798
+deemp_pole = .1450 * 1 
+deemp_zero = 3.100 * 1 
+lowpass_b, lowpass_a = sps.butter(4, 2.200/NYQUIST_MHZ)
+
+# 1204/771
+deemp_pole = .1450 * 1 
+deemp_zero = 3.202312738 * 1 
+lowpass_b, lowpass_a = sps.butter(4, 2.200/NYQUIST_MHZ)
+
+# 1204/771
+deemp_pole = .1450 * 1 
+deemp_zero = 3.202312738 * 1 
+lowpass_b, lowpass_a = sps.butter(4, 2.200/NYQUIST_MHZ)
 
 [tf_b, tf_a] = sps.zpk2tf([-deemp_pole*(10**-8)], [-deemp_zero*(10**-8)], deemp_pole / deemp_zero)
 [f_emp_b, f_emp_a] = sps.bilinear(tf_b, tf_a, .5/FREQ_HZ)
 
-# 6/1054 with 0.27 leftover scale
+# .295 leftover scale:  1053 frames found, 34731 good samps, 374 ERRORS
 bandpass = sps.firwin(55, [.335/NYQUIST_MHZ, 1.870/NYQUIST_MHZ], pass_zero=False)
+
+# .295 leftover scale:  1053 frames found, 34731 good samps, 374 ERRORS
+# 1647/352
+bandpass = sps.firwin(53, [.335/NYQUIST_MHZ, 1.870/NYQUIST_MHZ], pass_zero=False)
+
+# 1651/348
+bandpass = sps.firwin(53, [.355/NYQUIST_MHZ, 1.870/NYQUIST_MHZ], pass_zero=False)
+# 1652/343
+bandpass = sps.firwin(53, [.355/NYQUIST_MHZ, 2.800/NYQUIST_MHZ], pass_zero=False)
+# 1660/341
+bandpass = sps.firwin(39, [.600/NYQUIST_MHZ, 2.800/NYQUIST_MHZ], pass_zero=False)
+# 1660/339
+bandpass = sps.firwin(37, [.900/NYQUIST_MHZ, 2.800/NYQUIST_MHZ], pass_zero=False)
 
 #doplot(f_emp_b, f_emp_a)
 #doplot(bandpass, [1.0])
