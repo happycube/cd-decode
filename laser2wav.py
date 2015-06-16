@@ -271,11 +271,14 @@ def main():
 
     fcount = 0
 
+    prev_z = 0
     z = 0
     while True:
         z = delta_signal.find("100000000001000000000010", z)
         if z < 0:
             break
+
+        print("delta at ", z, z - prev_z)
 
         frame = delta_signal[z:z+588]
         if len(frame) == 588:
@@ -283,7 +286,8 @@ def main():
             control_stream.append(control)
             data_stream.append(data)
             fcount = fcount + 1
-        z = z + 588
+        prev_z = z
+        z = z + 22
 
     global goodsym
     print(goodsym, " good symbols")
