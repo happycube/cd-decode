@@ -106,7 +106,17 @@ deemp_pole = .0370 * 1
 deemp_zero = 3.102312738 * 1 
 lowpass_b, lowpass_a = sps.cheby2(14, 100., 1.80 / NYQUIST_MHZ)  
 
-[tf_b, tf_a] = sps.zpk2tf([-deemp_pole*(10**-8)], [-deemp_zero*(10**-8)], deemp_pole / deemp_zero)
+# LDD - 0/2535/41337 
+deemp_pole = .0360 * 1 
+deemp_zero = 3.102312738 * 1 
+lowpass_b, lowpass_a = sps.cheby2(14, 100., 1.80 / NYQUIST_MHZ)  
+
+# LDD - 0/2535/41337 
+deemp_pole = .0360 * 1 
+deemp_zero = 3.102312738 * 1 
+lowpass_b, lowpass_a = sps.cheby2(14, 100., 1.800 / NYQUIST_MHZ)  
+
+[tf_b, tf_a] = sps.zpk2tf([-deemp_pole*(10**-8)], [-deemp_zero*(10**-8)], deemp_zero / deemp_pole)
 [f_emp_b, f_emp_a] = sps.bilinear(tf_b, tf_a, .5/FREQ_HZ)
 
 # .295 leftover scale:  1053 frames found, 34731 good samps, 374 ERRORS
@@ -141,12 +151,12 @@ data -= dc
 
 #plt.plot(data[5000:6000])
 
-data = sps.lfilter(f_emp_b, f_emp_a, data)
 data = sps.lfilter(lowpass_b, lowpass_a, data)
+data = sps.lfilter(f_emp_b, f_emp_a, data)
 
 #data = sps.lfilter(bandpass, [1.0], data)
 
-#plt.plot(data[5000:6000])
+plt.plot(data[5000:6000])
 #plt.show()
 #exit()
 
@@ -174,7 +184,7 @@ totalRunlength0 = np.sum(runLengths[runValues == 0])
 totalRunlength1 = np.sum(runLengths[runValues == 1])
 
 bias = (totalRunlength0 - totalRunlength1) / (SAMPLE_FREQUENCY * len(runLengths))
-print "bias: {} seconds".format(bias)
+print "bias: {} seconds".format(bias), (totalRunlength0 - totalRunlength1) 
 
 runDurations = runLengths / SAMPLE_FREQUENCY   # to SECONDS
 

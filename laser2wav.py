@@ -90,8 +90,10 @@ def analyze_control_stream(control_stream):
             # discard a control byte - not part of a sector
             control_stream = control_stream[1:]
         else:
-            assert control_stream[0] == 'SYNC0'
-            assert control_stream[1] == 'SYNC1'
+            if control_stream[0] != 'SYNC0':
+                 print("BAD SYNC0")
+            if control_stream[1] != 'SYNC1':
+                 print("BAD SYNC1")
 
             for i in range(2, len(control_stream)):
                 if (control_stream[i] == 'SYNC0') or (control_stream[i] == 'SYNC1'):
