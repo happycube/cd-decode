@@ -46,6 +46,8 @@ data = np.fromfile("chopin8.cdraw", dtype = np.uint8)
 # remove the first samples because they are strange (lower amplitude)
 data = data[2650:len(data)-5000]
 
+# This prints stuff out for LTspice
+
 #for i in range(0, len(data)):
 #	print i / FREQ_HZ,",", (data[i] / 256.0) - .5
 #
@@ -84,6 +86,36 @@ deemp_pole = .1450 * 1
 deemp_zero = 3.202312738 * 1 
 lowpass_b, lowpass_a = sps.butter(4, 2.200/NYQUIST_MHZ)
 
+# 1205/766
+deemp_pole = .1450 * 1 
+deemp_zero = 3.30 * 1 
+lowpass_b, lowpass_a = sps.butter(4, 2.200/NYQUIST_MHZ)
+
+# 1663/354
+deemp_pole = .1450 * 1 
+deemp_zero = 3.20 * 1 
+lowpass_b = sps.firwin(43, [.400/NYQUIST_MHZ, 2.800/NYQUIST_MHZ], pass_zero=False)
+lowpass_a = [1.0]
+
+# 1664/351
+deemp_pole = .1480 * 1 
+deemp_zero = 3.20 * 1 
+lowpass_b = sps.firwin(43, [.400/NYQUIST_MHZ, 2.800/NYQUIST_MHZ], pass_zero=False)
+lowpass_a = [1.0]
+
+# 1664/345
+deemp_pole = .1480 * 1 
+deemp_zero = 3.20 * 1 
+lowpass_b = sps.firwin(45, [.390/NYQUIST_MHZ, 2.700/NYQUIST_MHZ], pass_zero=False)
+lowpass_a = [1.0]
+lowpass_b, lowpass_a = sps.butter(4, [0.39/NYQUIST_MHZ, 2.700/NYQUIST_MHZ], btype='bandpass')
+
+# 1664/345
+deemp_pole = .1480 * 1 
+deemp_zero = 3.20 * 1 
+lowpass_b = sps.firwin(45, [.390/NYQUIST_MHZ, 2.600/NYQUIST_MHZ], pass_zero=False)
+lowpass_a = [1.0]
+
 [tf_b, tf_a] = sps.zpk2tf([-deemp_pole*(10**-8)], [-deemp_zero*(10**-8)], deemp_pole / deemp_zero)
 [f_emp_b, f_emp_a] = sps.bilinear(tf_b, tf_a, .5/FREQ_HZ)
 
@@ -103,6 +135,9 @@ bandpass = sps.firwin(39, [.600/NYQUIST_MHZ, 2.800/NYQUIST_MHZ], pass_zero=False
 # 1660/339
 bandpass = sps.firwin(37, [.900/NYQUIST_MHZ, 2.800/NYQUIST_MHZ], pass_zero=False)
 
+# 1663/348
+bandpass = sps.firwin(43, [.880/NYQUIST_MHZ, 2.800/NYQUIST_MHZ], pass_zero=False)
+
 #doplot(f_emp_b, f_emp_a)
 #doplot(bandpass, [1.0])
 #exit()
@@ -119,19 +154,27 @@ data -= dc
 
 #plt.plot(data[5000:6000])
 
-#data = sps.lfilter(f_emp_b, f_emp_a, data)
-#data = sps.lfilter(lowpass_b, lowpass_a, data)
+data = sps.lfilter(f_emp_b, f_emp_a, data)
+data = sps.lfilter(lowpass_b, lowpass_a, data)
 
-data = sps.lfilter(bandpass, [1.0], data)
+#data = sps.lfilter(bandpass, [1.0], data)
 
-#plt.plot(data[5000:6000])
-#plt.show()
+plt.plot(data[5000:6000])
+plt.show()
 #exit()
 
 # filter to binary signal
 data = (data > 0.0)
 
-transition = np.diff(data) != 0
+#for i in range(1, len(data) - 1):
+#	if data[i] == True and data[i - 1] == False and data[i + 1] == False:
+#		print "err ", i
+#		data[i] = False 
+#	if data[i] == False and data[i - 1] == True and data[i + 1] == True:
+#		print "errp ", i
+#		data[i] = True
+
+transition = (np.diff(data) != 0) 
 transition = np.insert(transition, 0, False) # The first sample is never a transition.
 
 print "data", data.shape, data.dtype
@@ -153,6 +196,8 @@ totalRunlength1 = np.sum(runLengths[runValues == 1])
 
 bias = (totalRunlength0 - totalRunlength1) / (SAMPLE_FREQUENCY * len(runLengths))
 print "bias: {} seconds".format(bias)
+
+bias = 0
 
 runDurations = runLengths / SAMPLE_FREQUENCY   # to SECONDS
 
@@ -204,7 +249,8 @@ if True:
             #durationr = int(round(duration + (leftover * 0.22))) # to integer
             #durationr = int(round(duration + (leftover * 0.24))) # to integer
 #            durationr = int(round(duration + (leftover * 0.270))) # to integer
-            durationr = int(round(duration + (leftover * 0.295))) # to integer
+            #durationr = int(round(duration + (leftover * 0.295))) # to integer
+            durationr = int(round(duration + (leftover * 0.299))) # to integer
 #           durationr = int(round(duration)) # to integer
             leftover = duration - durationr
 
